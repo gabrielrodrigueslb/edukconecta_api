@@ -1,0 +1,283 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Tenant {
+  id     String  @id @default(uuid())
+  name   String
+  slug   String  @unique
+  active Boolean @default(true)
+
+  logoUrl         String?
+  loginBannerUrl  String?
+  faviconUrl      String?
+  defaultAvatarUrl String?
+  themeColor      String?
+
+  users             User[]
+  alunos            Alunos[]
+  responsaveis      Responsavel[]
+  alunoResponsaveis AlunoResponsavel[]
+  turmas            Turmas[]
+  presencas         Presencas[]
+  eventos           Eventos[]
+  avisos            Avisos[]
+  documentos        Documentos[]
+  documentosEscola  DocumentosEscola[]
+  notas             Notas[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id        String  @id @default(uuid())
+  tenantId  String?
+  name      String
+  avatarUrl String?
+  email     String
+  password  String
+
+  role   Role    @default(USER)
+  active Boolean @default(true)
+
+  tenant   Tenant? @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+}
+
+enum Role {
+  ADMIN
+  USER
+  SUPER_ADMIN
+}
+
+model Alunos {
+  id                    String   @id @default(uuid())
+  tenantId              String
+  nomeCompleto          String
+  dataNascimento        DateTime
+  serieEscolar          String
+  turno                 String?
+  fotoUrl               String?
+  escola                String?
+  cpf                   String
+  endereco              String?
+  alergias              String?
+  necessidadesEspeciais String?
+  sangue                String?
+  dificuldade           String?
+  jaParticipouDeReforco Boolean?  @default(false)
+  medicamentos          String?
+  laudosMedicos         String?
+  observacoesComportamento String?
+  desempenho            String?
+  materiasDificuldade   String[] @default([])
+  reacaoDificuldade     String?
+
+  matricula Int @default(autoincrement())
+
+  status StudentStatus @default(MATRICULADO)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  alunoResponsaveis AlunoResponsavel[]
+  turmas            Turmas[]
+  presencas         Presencas[]
+  boletins          Documentos[]
+  notas             Notas[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, cpf])
+  @@unique([tenantId, matricula])
+  @@index([tenantId, cpf])
+  @@index([tenantId])
+}
+
+enum StudentStatus {
+  MATRICULADO
+  ATIVO
+  INATIVO
+}
+
+model Responsavel {
+  id       String  @id @default(uuid())
+  tenantId String
+  nome     String
+  cpf      String?
+  telefone String
+  email    String?
+  endereco String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  alunos AlunoResponsavel[]
+
+  @@unique([tenantId, cpf])
+  @@index([tenantId])
+}
+
+model AlunoResponsavel {
+  id            String @id @default(uuid())
+  tenantId      String
+  alunoId       String
+  responsavelId String
+  parentesco    String
+
+  aluno       Alunos      @relation(fields: [alunoId], references: [id])
+  responsavel Responsavel @relation(fields: [responsavelId], references: [id])
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, alunoId, responsavelId])
+  @@index([tenantId])
+}
+
+model Turmas {
+  id        Int    @id @default(autoincrement())
+  tenantId  String
+  nomeTurma String
+  turno     String
+  diasSemana String[] @default([])
+  horarioInicio String?
+  horarioFim String?
+  status String @default("Ativa")
+  maxAlunos Int @default(15)
+
+  tenant   Tenant  @relation(fields: [tenantId], references: [id])
+  alunos    Alunos[]
+  presencas Presencas[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+model Presencas {
+  id            Int      @id @default(autoincrement())
+  tenantId      String
+  data          DateTime
+  turno         String
+  presente      Boolean  @default(true)
+  justificativa String?
+
+  alunoId String
+  turmaId Int?
+
+  aluno Alunos @relation(fields: [alunoId], references: [id])
+  turma Turmas? @relation(fields: [turmaId], references: [id])
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, alunoId, data, turno])
+  @@index([tenantId])
+}
+
+model Eventos {
+  id         String   @id @default(uuid())
+  tenantId   String
+  titulo     String
+  descricao  String?
+  dataInicio DateTime
+  dataFim    DateTime
+  tipo       String   @default("Evento")
+  cor        String?
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+model Avisos {
+  id         String   @id @default(uuid())
+  tenantId   String
+  titulo     String
+  conteudo   String
+  data       DateTime @default(now())
+  ativo      Boolean  @default(true)
+  prioridade String   @default("normal")
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+model Documentos {
+  id       String       @id @default(uuid())
+  tenantId String
+  nome     String
+  tipo     DocumentType
+  url      String
+
+  anoLetivo  Int?
+  observacao String?
+
+  alunoId String
+  aluno   Alunos @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  tenant  Tenant @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+model DocumentosEscola {
+  id       String       @id @default(uuid())
+  tenantId String
+  nome     String
+  tipo     DocumentType
+  url      String
+
+  anoLetivo  Int?
+  observacao String?
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+model Notas {
+  id         String   @id @default(uuid())
+  tenantId   String
+  disciplina String
+  bimestre   Int
+  nota       Float
+  observacao String?
+
+  alunoId String
+  aluno   Alunos @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  tenant  Tenant @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([alunoId])
+  @@index([tenantId])
+}
+
+enum DocumentType {
+  BOLETIM
+  LAUDO
+  AUTORIZACAO
+  DECLARACAO
+  MATRICULA
+  HISTORICO_ESCOLAR
+  OUTRO
+}
