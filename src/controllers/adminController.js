@@ -159,6 +159,10 @@ export async function createTenant(req, res) {
       faviconUrl = `/uploads/${slug}/branding/favicon.png`;
     }
 
+    if (!faviconUrl && logoUrl) {
+      faviconUrl = logoUrl;
+    }
+
     const tenant = await prisma.tenant.create({
       data: {
         slug,
@@ -283,7 +287,12 @@ export async function updateCurrentTenant(req, res) {
 
     const data = {};
     if (name) data.name = name;
-    if (logoUrl) data.logoUrl = logoUrl;
+    if (logoUrl) {
+      data.logoUrl = logoUrl;
+      if (!tenant.faviconUrl || tenant.faviconUrl === tenant.logoUrl) {
+        data.faviconUrl = logoUrl;
+      }
+    }
     if (loginBannerUrl) data.loginBannerUrl = loginBannerUrl;
     if (defaultAvatarUrl) data.defaultAvatarUrl = defaultAvatarUrl;
 
