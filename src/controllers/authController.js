@@ -18,6 +18,15 @@ function buildCookieOptions(isProduction) {
   return options;
 }
 
+function clearAuthCookies(res, isProduction) {
+  const baseOptions = buildCookieOptions(isProduction);
+  res.clearCookie('authToken', baseOptions);
+  if (baseOptions.domain) {
+    const { domain, ...rest } = baseOptions;
+    res.clearCookie('authToken', rest);
+  }
+}
+
 export async function login(req, res) {
   try {
     const { email, password } = req.body;
@@ -36,6 +45,7 @@ export async function login(req, res) {
     );
 
     const isProduction = process.env.NODE_ENV === 'production';
+    clearAuthCookies(res, isProduction);
     res.cookie('authToken', token, buildCookieOptions(isProduction));
 
     res.json({
@@ -55,6 +65,6 @@ export async function login(req, res) {
 
 export function logout(req, res) {
   const isProduction = process.env.NODE_ENV === 'production';
-  res.clearCookie('authToken', buildCookieOptions(isProduction));
+  clearAuthCookies(res, isProduction);
   res.json({ message: 'Logout realizado' });
 }
