@@ -119,33 +119,19 @@ export async function createTenant(req, res) {
 
     if (files.logo && files.logo[0]) {
       const outputPath = path.join(brandingDir, 'logo.webp');
-      await saveWebp(files.logo[0].buffer, outputPath, {
-        width: 512,
-        height: 512,
-        fit: 'contain',
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
-      });
+      await saveWebp(files.logo[0].buffer, outputPath);
       logoUrl = `/uploads/${slug}/branding/logo.webp`;
     }
 
     if (files.banner && files.banner[0]) {
       const outputPath = path.join(brandingDir, 'login-banner.webp');
-      await saveWebp(files.banner[0].buffer, outputPath, {
-        width: 1920,
-        height: 720,
-        fit: 'cover',
-      });
+      await saveWebp(files.banner[0].buffer, outputPath);
       loginBannerUrl = `/uploads/${slug}/branding/login-banner.webp`;
     }
 
     if (files.avatar && files.avatar[0]) {
       const outputPath = path.join(brandingDir, 'default-avatar.webp');
-      await saveWebp(files.avatar[0].buffer, outputPath, {
-        width: 256,
-        height: 256,
-        fit: 'cover',
-        position: 'center',
-      });
+      await saveWebp(files.avatar[0].buffer, outputPath);
       defaultAvatarUrl = `/uploads/${slug}/branding/default-avatar.webp`;
     }
 
@@ -250,12 +236,7 @@ export async function updateCurrentTenant(req, res) {
     if (files.logo && files.logo[0]) {
       const filename = `logo-${Date.now()}.webp`;
       const outputPath = path.join(brandingDir, filename);
-      await saveWebp(files.logo[0].buffer, outputPath, {
-        width: 512,
-        height: 512,
-        fit: 'contain',
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
-      });
+      await saveWebp(files.logo[0].buffer, outputPath);
       logoUrl = `/uploads/${tenant.slug}/branding/${filename}`;
       void removeUploadIfExists(tenant.logoUrl);
     }
@@ -263,11 +244,7 @@ export async function updateCurrentTenant(req, res) {
     if (files.banner && files.banner[0]) {
       const filename = `login-banner-${Date.now()}.webp`;
       const outputPath = path.join(brandingDir, filename);
-      await saveWebp(files.banner[0].buffer, outputPath, {
-        width: 1920,
-        height: 720,
-        fit: 'cover',
-      });
+      await saveWebp(files.banner[0].buffer, outputPath);
       loginBannerUrl = `/uploads/${tenant.slug}/branding/${filename}`;
       void removeUploadIfExists(tenant.loginBannerUrl);
     }
@@ -275,12 +252,7 @@ export async function updateCurrentTenant(req, res) {
     if (files.avatar && files.avatar[0]) {
       const filename = `default-avatar-${Date.now()}.webp`;
       const outputPath = path.join(brandingDir, filename);
-      await saveWebp(files.avatar[0].buffer, outputPath, {
-        width: 256,
-        height: 256,
-        fit: 'cover',
-        position: 'center',
-      });
+      await saveWebp(files.avatar[0].buffer, outputPath);
       defaultAvatarUrl = `/uploads/${tenant.slug}/branding/${filename}`;
       void removeUploadIfExists(tenant.defaultAvatarUrl);
     }
