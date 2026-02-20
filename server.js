@@ -24,6 +24,7 @@ const LOCAL_ORIGINS = new Set([
   'http://localhost:2006',
   'http://127.0.0.1:3000',
   'http://127.0.0.1:2006',
+  'http://demoeduk.localhost:3000',
 ]);
 
 function isEdukconectaOrigin(origin) {
