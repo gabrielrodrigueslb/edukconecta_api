@@ -5,6 +5,20 @@ import path from 'path';
 
 const ALLOWED_ROLES = new Set(['USER', 'ADMIN', 'SUPER_ADMIN']);
 
+function ensureStrongPassword(password) {
+  const strong =
+    password.length >= 8 &&
+    /[a-z]/.test(password) &&
+    /[A-Z]/.test(password) &&
+    /[0-9]/.test(password) &&
+    /[^A-Za-z0-9]/.test(password);
+  if (!strong) {
+    throw new Error(
+      'Senha fraca. Use ao menos 8 caracteres, maiuscula, minuscula, numero e simbolo.',
+    );
+  }
+}
+
 export async function createUser({ tenantId, name, avatarUrl, email, password, role }) {
   if (!name) throw new Error('Nome do usuario e obrigatorio');
   if (!email) throw new Error('Email do usuario e obrigatorio');
@@ -137,17 +151,7 @@ export async function updateUser(tenantId, id, data) {
     if (!isPasswordValid) {
       throw new Error('Senha atual invalida');
     }
-    const strong =
-      data.password.length >= 8 &&
-      /[a-z]/.test(data.password) &&
-      /[A-Z]/.test(data.password) &&
-      /[0-9]/.test(data.password) &&
-      /[^A-Za-z0-9]/.test(data.password);
-    if (!strong) {
-      throw new Error(
-        'Senha fraca. Use ao menos 8 caracteres, maiuscula, minuscula, numero e simbolo.',
-      );
-    }
+    ensureStrongPassword(data.password);
     data.password = await bcrypt.hash(data.password, 10);
   }
 
@@ -176,6 +180,32 @@ export async function updateUser(tenantId, id, data) {
       email: true,
       avatarUrl: true,
       role: true,
+      active: true,
+    },
+  });
+}
+
+export async function resetUserPassword(tenantId, id, newPassword) {
+  if (!tenantId) throw new Error('Tenant invalido');
+  if (!id) throw new Error('ID do usuario e obrigatorio');
+  if (!newPassword) throw new Error('Senha obrigatoria');
+
+  const user = await prisma.user.findFirst({ where: { id, tenantId } });
+  if (!user) throw new Error('Usuario nao encontrado');
+
+  ensureStrongPassword(newPassword);
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+
+  return prisma.user.update({
+    where: { id: user.id },
+    data: { password: passwordHash },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      avatarUrl: true,
+      active: true,
     },
   });
 }

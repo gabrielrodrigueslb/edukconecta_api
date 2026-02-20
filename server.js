@@ -11,6 +11,7 @@ import avisoRoutes from './src/routes/avisoRoutes.js';
 import eventoRoutes from './src/routes/eventoRoutes.js';
 import documentoEscolaRoutes from './src/routes/documentoEscolaRoutes.js';
 import tenantRoutes from './src/routes/tenantRoutes.js';
+import adminRoutes from './src/routes/adminRoutes.js';
 import path from 'path';
 import { tenantMiddleware } from './middlewares/tenant.middleware.js';
 
@@ -69,6 +70,7 @@ app.use(
 app.use(tenantMiddleware);
 
 app.use('/api/tenant', tenantRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/alunos', alunoRoutes);

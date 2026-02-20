@@ -23,6 +23,10 @@ function extractSlugFromHost(hostname) {
 
 export async function tenantMiddleware(req, res, next) {
   try {
+    if (req.path.startsWith('/api/admin/tenants')) {
+      return next();
+    }
+
     if (req.path.startsWith('/uploads/')) {
       return next();
     }
