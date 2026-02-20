@@ -26,6 +26,8 @@ export async function createUser({ tenantId, name, avatarUrl, email, password, r
 
   const normalizedRole = ALLOWED_ROLES.has(role) ? role : 'USER';
 
+  ensureStrongPassword(password);
+
   if (normalizedRole === 'SUPER_ADMIN') {
     const exists = await prisma.user.findFirst({
       where: { email, role: 'SUPER_ADMIN' },
