@@ -1,4 +1,4 @@
-import 'dotenv/config';
+﻿import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import prisma from '../lib/prisma.js';
 
@@ -9,6 +9,95 @@ const ADMIN_EMAIL = 'admin@demoeduk.com';
 const ADMIN_PASSWORD = 'Demo@1234';
 const TEACHER_EMAIL = 'professor@demoeduk.com';
 const TEACHER_PASSWORD = 'Demo@1234';
+
+const STUDENTS_PER_TURMA = 15;
+
+const STUDENT_FIRST_NAMES = [
+  'Ana',
+  'Beatriz',
+  'Bruno',
+  'Caio',
+  'Daniela',
+  'Eduardo',
+  'Fernanda',
+  'Gustavo',
+  'Helena',
+  'Isabela',
+  'Joao',
+  'Larissa',
+  'Marcos',
+  'Natalia',
+  'Otavio',
+  'Paula',
+  'Rafael',
+  'Sofia',
+  'Tiago',
+  'Vitoria',
+];
+
+const LAST_NAMES = [
+  'Silva',
+  'Santos',
+  'Oliveira',
+  'Souza',
+  'Lima',
+  'Pereira',
+  'Carvalho',
+  'Ferreira',
+  'Almeida',
+  'Gomes',
+  'Ribeiro',
+  'Rocha',
+  'Barbosa',
+  'Dias',
+  'Moreira',
+];
+
+const GUARDIAN_FIRST_NAMES = [
+  'Adriana',
+  'Aline',
+  'Andre',
+  'Camila',
+  'Carlos',
+  'Cintia',
+  'Diego',
+  'Eliane',
+  'Fabio',
+  'Juliana',
+  'Luciana',
+  'Marcio',
+  'Patricia',
+  'Renata',
+  'Rodrigo',
+  'Vanessa',
+];
+
+const PERFORMANCE_INDICATORS = [
+  'Excelente',
+  'Muito bom',
+  'Bom',
+  'Regular',
+  'Em desenvolvimento',
+  'Precisa de apoio',
+];
+
+const STREET_NAMES = [
+  'Rua das Flores',
+  'Rua do Sol',
+  'Avenida Central',
+  'Rua das Acacias',
+  'Avenida Brasil',
+  'Rua da Serra',
+  'Rua Horizonte',
+  'Avenida Principal',
+  'Rua do Lago',
+  'Rua Santa Rita',
+  'Rua Palmeiras',
+  'Rua das Laranjeiras',
+  'Avenida das Artes',
+  'Rua da Paz',
+  'Avenida dos Ipes',
+];
 
 function randomBetween(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -45,8 +134,22 @@ function getRecentSchoolDays(count) {
 
 function pickDifficultySubjects(seed) {
   const options = ['Matematica', 'Portugues', 'Ciencias', 'Historia', 'Geografia'];
-  const count = seed % 3;
+  const count = (seed % 3) + 1;
   return options.slice(0, count);
+}
+
+function buildPersonName(index, firstNames) {
+  const first = firstNames[index % firstNames.length];
+  const last = LAST_NAMES[Math.floor(index / firstNames.length) % LAST_NAMES.length];
+  const second =
+    LAST_NAMES[Math.floor(index / (firstNames.length * LAST_NAMES.length)) % LAST_NAMES.length];
+  return `${first} ${last} ${second}`.trim();
+}
+
+function buildAddress(index) {
+  const street = STREET_NAMES[index % STREET_NAMES.length];
+  const number = 20 + (index % 120);
+  return `${street}, ${number} - Centro`;
 }
 
 async function clearTenantData(tenantId) {
@@ -119,7 +222,7 @@ async function seedTenant() {
         horarioInicio: '08:00',
         horarioFim: '11:30',
         status: 'Ativa',
-        maxAlunos: 15,
+        maxAlunos: STUDENTS_PER_TURMA,
       },
     }),
     prisma.turmas.create({
@@ -131,23 +234,20 @@ async function seedTenant() {
         horarioInicio: '13:30',
         horarioFim: '17:00',
         status: 'Ativa',
-        maxAlunos: 15,
+        maxAlunos: STUDENTS_PER_TURMA,
       },
     }),
   ]);
 
   const alunos = [];
-  const responsaveis = [];
   const alunoResponsavel = [];
-  let seed = 1;
 
   for (let turmaIndex = 0; turmaIndex < turmas.length; turmaIndex += 1) {
     const turma = turmas[turmaIndex];
-    for (let i = 1; i <= 15; i += 1) {
-      const cpfAluno = makeCpf(seed);
-      const cpfResp = makeCpf(500 + seed);
-      const alunoNome = `Aluno ${turmaIndex + 1}-${padLeft(i, 2)}`;
-      const respNome = `Responsavel ${turmaIndex + 1}-${padLeft(i, 2)}`;
+    for (let i = 1; i <= STUDENTS_PER_TURMA; i += 1) {
+      const studentIndex = turmaIndex * STUDENTS_PER_TURMA + i;
+      const cpfAluno = makeCpf(1000 + studentIndex);
+      const alunoNome = buildPersonName(studentIndex, STUDENT_FIRST_NAMES);
       const nascimento = new Date(2010 - turmaIndex, (i % 12), (i % 28) + 1);
 
       const aluno = await prisma.alunos.create({
@@ -160,46 +260,52 @@ async function seedTenant() {
           fotoUrl: null,
           escola: 'Escola Demo Eduk',
           cpf: cpfAluno,
-          endereco: `Rua ${turmaIndex + 1} - ${i}, Centro`,
-          alergias: i % 4 === 0 ? 'Lactose' : null,
-          necessidadesEspeciais: i % 7 === 0 ? 'Acompanhamento pedagógico' : null,
-          sangue: ['A+', 'B+', 'O+', 'AB+'][i % 4],
-          dificuldade: i % 3 === 0 ? 'Matematica' : null,
-          jaParticipouDeReforco: i % 2 === 0,
-          medicamentos: i % 6 === 0 ? 'Vitamina' : null,
-          laudosMedicos: i % 8 === 0 ? 'Laudo psicopedagogico' : null,
-          observacoesComportamento: i % 5 === 0 ? 'Participativo' : null,
-          desempenho: i % 2 === 0 ? 'Bom' : 'Regular',
-          materiasDificuldade: pickDifficultySubjects(seed),
-          reacaoDificuldade: i % 3 === 0 ? 'Precisa de reforco' : null,
-          status: i % 5 === 0 ? 'MATRICULADO' : 'ATIVO',
+          endereco: buildAddress(studentIndex),
+          alergias: studentIndex % 4 === 0 ? 'Lactose' : null,
+          necessidadesEspeciais:
+            studentIndex % 7 === 0 ? 'Acompanhamento pedagogico' : null,
+          sangue: ['A+', 'B+', 'O+', 'AB+'][studentIndex % 4],
+          dificuldade: studentIndex % 3 === 0 ? 'Matematica' : null,
+          jaParticipouDeReforco: studentIndex % 2 === 0,
+          medicamentos: studentIndex % 6 === 0 ? 'Vitamina' : null,
+          laudosMedicos: studentIndex % 8 === 0 ? 'Laudo psicopedagogico' : null,
+          observacoesComportamento:
+            studentIndex % 5 === 0 ? 'Participativo' : null,
+          desempenho:
+            PERFORMANCE_INDICATORS[studentIndex % PERFORMANCE_INDICATORS.length],
+          materiasDificuldade: pickDifficultySubjects(studentIndex),
+          reacaoDificuldade:
+            studentIndex % 3 === 0 ? 'Precisa de reforco' : null,
+          status: studentIndex % 5 === 0 ? 'MATRICULADO' : 'ATIVO',
           turmas: {
             connect: { id: turma.id },
           },
         },
       });
 
-      const responsavel = await prisma.responsavel.create({
-        data: {
-          tenantId: tenant.id,
-          nome: respNome,
-          cpf: cpfResp,
-          telefone: makePhone(seed),
-          email: `responsavel${turmaIndex + 1}${padLeft(i, 2)}@demoeduk.com`,
-          endereco: `Rua ${turmaIndex + 1} - ${i}, Centro`,
-        },
-      });
-
       alunos.push(aluno);
-      responsaveis.push(responsavel);
-      alunoResponsavel.push({
-        tenantId: tenant.id,
-        alunoId: aluno.id,
-        responsavelId: responsavel.id,
-        parentesco: i % 2 === 0 ? 'Mae' : 'Pai',
-      });
 
-      seed += 1;
+      const guardiansCount = studentIndex % 4 === 0 ? 2 : 1;
+      for (let g = 0; g < guardiansCount; g += 1) {
+        const guardianIndex = studentIndex * 2 + g;
+        const responsavel = await prisma.responsavel.create({
+          data: {
+            tenantId: tenant.id,
+            nome: buildPersonName(guardianIndex, GUARDIAN_FIRST_NAMES),
+            cpf: makeCpf(5000 + guardianIndex),
+            telefone: makePhone(guardianIndex),
+            email: `responsavel${padLeft(guardianIndex, 3)}@demoeduk.com`,
+            endereco: buildAddress(guardianIndex),
+          },
+        });
+
+        alunoResponsavel.push({
+          tenantId: tenant.id,
+          alunoId: aluno.id,
+          responsavelId: responsavel.id,
+          parentesco: g === 0 ? (studentIndex % 2 === 0 ? 'Mae' : 'Pai') : 'Tio',
+        });
+      }
     }
   }
 
@@ -362,7 +468,9 @@ async function seedTenant() {
         titulo: 'Aula Inaugural',
         descricao: 'Abertura do semestre letivo.',
         dataInicio: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
-        dataFim: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000),
+        dataFim: new Date(
+          Date.now() + 1 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000,
+        ),
         tipo: 'Evento',
         cor: '#2563eb',
       },
@@ -371,7 +479,9 @@ async function seedTenant() {
         titulo: 'Festival Cultural',
         descricao: 'Apresentacoes culturais dos alunos.',
         dataInicio: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-        dataFim: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000),
+        dataFim: new Date(
+          Date.now() + 14 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000,
+        ),
         tipo: 'Evento',
         cor: '#f59e0b',
       },
@@ -380,7 +490,9 @@ async function seedTenant() {
         titulo: 'Simulado Geral',
         descricao: 'Avaliacoes simuladas para todas as turmas.',
         dataInicio: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
-        dataFim: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000),
+        dataFim: new Date(
+          Date.now() + 21 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000,
+        ),
         tipo: 'Avaliacao',
         cor: '#10b981',
       },
